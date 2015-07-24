@@ -4,6 +4,7 @@ var map;
 // var directionsDisplay;
 var directionsService;
 var stepDisplay;
+var TIME_FACTOR = 5;
 
 //TODO: Make a class for route objects
 var routes = [];
@@ -95,8 +96,8 @@ function showSteps(directionResult, duration) {
       step.start_location,
       step.end_location
     ];
-    lineObj.distance = step.distance;
-    routeObj.distance += step.distance;
+    lineObj.distance = step.distance.value;
+    routeObj.distance += step.distance.value;
     routeObj.lines.push(lineObj);
   };
   
@@ -111,44 +112,77 @@ function showSteps(directionResult, duration) {
 }
 
 function animateRouteObj(routeObj) {
+  var startTime = 0;
   for (var i = 0; i < routeObj.lines.length; ++i) {
     // Define the symbol, using one of the predefined paths ('CIRCLE')
     // supplied by the Google Maps JavaScript API.
     var lineObj = routeObj.lines[i];
     
     
-    var lineSymbol = {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        strokeColor: '#393'
-    };
+    // var lineSymbol = {
+    //     path: google.maps.SymbolPath.CIRCLE,
+    //     scale: 8,
+    //     strokeColor: '#393'
+    // };
     
     // Create the polyline and add the symbol to it via the 'icons' property.
     var line = new google.maps.Polyline({
       path: lineObj.lineCoordinates,
-      icons: [{
-        icon: lineSymbol,
-        offset: '100%'
-      }],
+      // icons: [{
+      //   icon: lineSymbol,
+      //   offset: '100%'
+      // }],
       map: map
     });
     
-    animateCircle(line, lineObj.distance, routeObj.distance);
+    var timeInLine = (lineObj.distance/routeObj.distance) * routeObj.duration * TIME_FACTOR;
+    
+    (function(startTime) {
+      animateCircle(line, timeInLine, startTime);
+    })(startTime);
+    
+    startTime+= timeInLine;
   }
 }
 
 
 // Use the DOM setInterval() function to change the offset of the symbol
 // at fixed intervals.
-function animateCircle(line) {
+function animateCircle(line, timeInLine, startTime) {
+  
+  
+  console.log("timeInRoute: ", timeInLine);
+  console.log("startTime: ", startTime);
+  
+  window.setTimeout(function() {
+    console.log("starting one now");
+     var lineSymbol = {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        strokeColor: '#393'
+    };
+    
+    var iconsToSet = [{icon: lineSymbol, offset: '100%'}];
+    line.set('icons', iconsToSet);
     var count = 0;
-    window.setInterval(function() {
-      count = (count + 1) % 200;
-
-      var icons = line.get('icons');
-      icons[0].offset = (count / 2) + '%';
-      line.set('icons', icons);
-  }, 20);
+    
+    var intervalId = window.setInterval(function() {
+        count = (count + 1) % 200;
+  
+        var icons = line.get('icons');
+        icons[0].offset = (count / 2) + '%';
+        line.set('icons', icons);
+    }, timeInLine/20);
+    
+    (function(intervalId) {
+      console.log("clearing one now");
+       window.setTimeout(function() {
+         line.set('icons', []);
+         window.clearInterval(intervalId);
+       }, timeInLine + startTime);
+    })(intervalId);
+   
+   }, startTime);
 }
 
 // function attachInstructionText(marker, text) {

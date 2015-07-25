@@ -4,23 +4,21 @@ var map;
 // var directionsDisplay;
 var directionsService;
 var stepDisplay;
-var TIME_FACTOR = 5;
+var TIME_FACTOR = 3;
 
 //TODO: Make a class for route objects
 var routes = [];
 
-//each route should have a set of lines
-var lines = [];
-
-// var markerArray = [];
-
 //This seems a bit off, maybe I should subscribe to the event here
 window.startAnimation = function() {
-  var startPoint    = new google.maps.LatLng(40.73524276, -73.98758561);
-  var endPoint      = new google.maps.LatLng(40.75044999, -73.99481051);
-  var durInSeconds  = 1257;
+  var trip = {
+    startPoint : new google.maps.LatLng(40.73524276, -73.98758561),
+    endPoint   : new google.maps.LatLng(40.75044999, -73.99481051),
+    duration   : 1257,
+    startTime  : 0,
+  }
   
-  animateRoute(startPoint, endPoint, durInSeconds);
+  animateRoute(trip);
 }
 
 function initialize() {
@@ -36,30 +34,15 @@ function initialize() {
   }
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
-  // // Create a renderer for directions and bind it to the map.
-  // var rendererOptions = {
-  //   map: map
-  // }
-  // directionsDisplay = new google.maps.DirectionsRenderer(rendererOptions)
-
   // Instantiate an info window to hold step text.
   stepDisplay = new google.maps.InfoWindow();
 }
 
-function animateRoute(start, end, duration) {
-
-  // First, remove any existing markers from the map.
-  // for (var i = 0; i < markerArray.length; i++) {
-  //   markerArray[i].setMap(null);
-  // }
-
-  // Now, clear the array itself.
-  // markerArray = [];
-
+function animateRoute(trip) {
   // Create a DirectionsRequest using BICYCLING directions.
   var request = {
-      origin: start,
-      destination: end,
+      origin: trip.startPoint,
+      destination: trip.endPoint,
       travelMode: google.maps.TravelMode.BICYCLING
   };
 
@@ -69,13 +52,12 @@ function animateRoute(start, end, duration) {
     if (status == google.maps.DirectionsStatus.OK) {
       var warnings = document.getElementById('warnings_panel');
       warnings.innerHTML = '<b>' + response.routes[0].warnings + '</b>';
-      //directionsDisplay.setDirections(response);
-      showSteps(response, duration);
+      showSteps(response, trip);
     }
   });
 }
 
-function showSteps(directionResult, duration) {
+function showSteps(directionResult, trip) {
   // For each step, place a marker, and add the text to the marker's
   // info window. Also attach the marker to an array so we
   // can keep track of it and remove it when calculating new
@@ -84,115 +66,72 @@ function showSteps(directionResult, duration) {
   
   //TODO: Route class
   var routeObj = { 
-    lines : [],
+    coordinates : [],
     distance: 0,
-    duration: duration
    };
 
   for (var i = 0; i < myRoute.steps.length; i++) {
     var step = myRoute.steps[i];
-    var lineObj = {};
-    lineObj.lineCoordinates = [
-      step.start_location,
-      step.end_location
-    ];
-    lineObj.distance = step.distance.value;
+    // var lineObj = {};
+    routeObj.coordinates.push(step.start_location);
+    if (i === myRoute.steps.length - 1) {
+      routeObj.coordinates.push(step.end_location);
+    }
     routeObj.distance += step.distance.value;
-    routeObj.lines.push(lineObj);
   };
   
-  animateRouteObj(routeObj);
-    
-    // var marker = new google.maps.Marker({
-    //   position: myRoute.steps[i].start_location,
-    //   map: map
-    // });
-    // //attachInstructionText(marker, myRoute.steps[i].instructions);
-    // markerArray[i] = marker;
+  animateRouteObj(routeObj, trip);
 }
 
-function animateRouteObj(routeObj) {
-  var startTime = 0;
-  for (var i = 0; i < routeObj.lines.length; ++i) {
-    // Define the symbol, using one of the predefined paths ('CIRCLE')
-    // supplied by the Google Maps JavaScript API.
-    var lineObj = routeObj.lines[i];
-    
-    
-    // var lineSymbol = {
-    //     path: google.maps.SymbolPath.CIRCLE,
-    //     scale: 8,
-    //     strokeColor: '#393'
-    // };
-    
-    // Create the polyline and add the symbol to it via the 'icons' property.
-    var line = new google.maps.Polyline({
-      path: lineObj.lineCoordinates,
-      // icons: [{
-      //   icon: lineSymbol,
-      //   offset: '100%'
-      // }],
-      map: map
-    });
-    
-    var timeInLine = (lineObj.distance/routeObj.distance) * routeObj.duration * TIME_FACTOR;
-    
-    (function(startTime) {
-      animateCircle(line, timeInLine, startTime);
-    })(startTime);
-    
-    startTime+= timeInLine;
-  }
+function animateRouteObj(routeObj, trip) {   
+  // Define the symbol, using one of the predefined paths ('CIRCLE')
+  // supplied by the Google Maps JavaScript API.    
+  var lineSymbol = {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 2,
+      strokeColor: '#393'
+  };
+  
+  // Create the polyline and add the symbol to it via the 'icons' property.
+  var bikePath = new google.maps.Polyline({
+    path: routeObj.coordinates,
+    geodesic: true,
+    strokeColor: '#0000FF',
+    strokeOpacity: 1.0,
+    strokeWeight: 1,
+    icons: [{
+      icon: lineSymbol,
+      offset: '0%'
+    }],
+  });
+
+  bikePath.setMap(map);
+  
+  scheduleRoute(bikePath, routeObj, trip);
 }
 
-
-// Use the DOM setInterval() function to change the offset of the symbol
-// at fixed intervals.
-function animateCircle(line, timeInLine, startTime) {
-  
-  
-  console.log("timeInRoute: ", timeInLine);
-  console.log("startTime: ", startTime);
-  
-  window.setTimeout(function() {
-    console.log("starting one now");
-     var lineSymbol = {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        strokeColor: '#393'
-    };
+function scheduleRoute(bikePath, routeObj, trip) {
+   window.setTimeout(function() {
     
-    var iconsToSet = [{icon: lineSymbol, offset: '100%'}];
-    line.set('icons', iconsToSet);
     var count = 0;
-    
-    var intervalId = window.setInterval(function() {
-        count = (count + 1) % 200;
-  
-        var icons = line.get('icons');
-        icons[0].offset = (count / 2) + '%';
-        line.set('icons', icons);
-    }, timeInLine/20);
-    
-    (function(intervalId) {
-      console.log("clearing one now");
-       window.setTimeout(function() {
-         line.set('icons', []);
-         window.clearInterval(intervalId);
-       }, timeInLine + startTime);
-    })(intervalId);
-   
-   }, startTime);
-}
+    var numIncrements = Math.floor(trip.duration * TIME_FACTOR /20);
 
-// function attachInstructionText(marker, text) {
-//   google.maps.event.addListener(marker, 'click', function() {
-//     // Open an info window when the marker is clicked on,
-//     // containing the text of the step.
-//     stepDisplay.setContent(text);
-//     stepDisplay.open(map, marker);
-//   });
-// }
+    // Use the DOM setInterval() function to change the offset of the symbol
+    // at fixed intervals.
+    var intervalId = window.setInterval(function() {
+        var percent = ++count / numIncrements;
+        var icons = bikePath.get('icons');
+        icons[0].offset = (percent*100 + '%');
+        bikePath.set('icons', icons);
+        if (percent >= 1) {
+          bikePath.setMap(null);
+          bikePath.set('icons', []);
+          window.clearInterval(intervalId);
+        }
+    }, 20);
+    
+  }, trip.startTime * TIME_FACTOR);
+}
 
 google.maps.event.addDomListener(window, 'load', initialize);
 })();

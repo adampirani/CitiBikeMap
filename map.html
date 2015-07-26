@@ -7,11 +7,45 @@
     <link rel="stylesheet" type="text/css" href="./style/style.css">
     <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&signed_in=true"></script>
     <script src="./source/bikeMap.js"> </script>
+    <script>
+      
+      var trips = [
+        {
+          startPoint : new google.maps.LatLng(40.73524276, -73.98758561),
+          endPoint   : new google.maps.LatLng(40.75044999, -73.99481051),
+          duration   : 1257,
+          startTime  : 28,
+        },
+        {
+          startPoint : new google.maps.LatLng(40.74854862, -73.98808416),
+          endPoint   : new google.maps.LatLng(40.74444921, -73.98303529),
+          duration   : 275,
+          startTime  : 43,
+        },
+        {
+          startPoint : new google.maps.LatLng(40.7423543, -73.98915076),
+          endPoint   : new google.maps.LatLng(40.74317449, -74.00366443),
+          duration   : 450,
+          startTime  : 82,
+        },
+        {
+          startPoint : new google.maps.LatLng(40.73524276, -73.98758561),
+          endPoint   : new google.maps.LatLng(40.75044999, -73.99481051),
+          duration   : 1126,
+          startTime  : 137,
+        }
+      ];
+
+      google.maps.event.addDomListener(window, 'load', function() {
+        window.initializeMapService();
+        startAnimation(trips);
+      });
+    </script>
   </head>
   <body>
-    <div id="panel">
-    <button id="startButton" onclick="startAnimation()">Start Animation</button>
-    </div>
+    <!--<div id="panel">
+    <button id="startButton" onclick="startAnimation(trips)">Start Animation</button>
+    </div>-->
     <div id="map-canvas"></div>
     &nbsp;
     <div id="warnings_panel" style="width:100%;height:10%;text-align:center"></div>

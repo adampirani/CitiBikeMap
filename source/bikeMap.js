@@ -10,42 +10,16 @@ var TIME_FACTOR = 3;
 var routes = [];
 
 //TODO: Delete this global, should be pulled in from DB
-var trips = [
-  {
-    startPoint : new google.maps.LatLng(40.73524276, -73.98758561),
-    endPoint   : new google.maps.LatLng(40.75044999, -73.99481051),
-    duration   : 1257,
-    startTime  : 28,
-  },
-  {
-    startPoint : new google.maps.LatLng(40.74854862, -73.98808416),
-    endPoint   : new google.maps.LatLng(40.74444921, -73.98303529),
-    duration   : 275,
-    startTime  : 43,
-  },
-  {
-    startPoint : new google.maps.LatLng(40.7423543, -73.98915076),
-    endPoint   : new google.maps.LatLng(40.74317449, -74.00366443),
-    duration   : 450,
-    startTime  : 82,
-  },
-  {
-    startPoint : new google.maps.LatLng(40.73524276, -73.98758561),
-    endPoint   : new google.maps.LatLng(40.75044999, -73.99481051),
-    duration   : 1126,
-    startTime  : 137,
-  }
-];
 
 
 //This seems a bit off, maybe I should subscribe to the event here
-window.startAnimation = function() {
+window.startAnimation = function(trips) {
   for (var i = 0, len = trips.length; i < len; ++i) {
     animateRoute(trips[i]);   
   }
 }
 
-function initialize() {
+window.initializeMapService = function() {
   // Instantiate a directions service.
   directionsService = new google.maps.DirectionsService();
 
@@ -156,6 +130,4 @@ function scheduleRoute(bikePath, routeObj, trip) {
     
   }, trip.startTime * TIME_FACTOR);
 }
-
-google.maps.event.addDomListener(window, 'load', initialize);
 })();

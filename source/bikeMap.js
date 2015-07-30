@@ -1,7 +1,6 @@
 (function() {
   "use strict";
 var map;
-// var directionsDisplay;
 var directionsService;
 var stepDisplay;
 var TIME_FACTOR = 3;
@@ -9,10 +8,8 @@ var TIME_FACTOR = 3;
 //TODO: Make a class for route objects
 var routes = [];
 
-//TODO: Delete this global, should be pulled in from DB
 
-
-//This seems a bit off, maybe I should subscribe to the event here
+//This seems a bit off, maybe I should subscribe to the click event here
 window.startAnimation = function(trips) {
   for (var i = 0, len = trips.length; i < len; ++i) {
     animateRoute(trips[i]);   
@@ -45,7 +42,7 @@ function animateRoute(trip) {
   };
 
   // Route the directions and pass the response to a
-  // function to create markers for each step.
+  // function to create an animation
   directionsService.route(request, function(response, status) {
     if (status == google.maps.DirectionsStatus.OK) {
       var warnings = document.getElementById('warnings_panel');
@@ -56,10 +53,8 @@ function animateRoute(trip) {
 }
 
 function showSteps(directionResult, trip) {
-  // For each step, place a marker, and add the text to the marker's
-  // info window. Also attach the marker to an array so we
-  // can keep track of it and remove it when calculating new
-  // routes.
+  // For each step, save the coordinates to build a line that follows
+  // the default bicycling directions
   var myRoute = directionResult.routes[0].legs[0];
   
   //TODO: Route class
@@ -68,9 +63,10 @@ function showSteps(directionResult, trip) {
     distance: 0,
    };
 
+ //Save the coordinates for each step (used to build a line for the route)
+ //As well as calculate total distance used for animation timing
   for (var i = 0; i < myRoute.steps.length; i++) {
     var step = myRoute.steps[i];
-    // var lineObj = {};
     routeObj.coordinates.push(step.start_location);
     if (i === myRoute.steps.length - 1) {
       routeObj.coordinates.push(step.end_location);
@@ -108,6 +104,7 @@ function animateRouteObj(routeObj, trip) {
   scheduleRoute(bikePath, routeObj, trip);
 }
 
+//Schedule the animation to take place based on when the trip started
 function scheduleRoute(bikePath, routeObj, trip) {
    window.setTimeout(function() {
     
@@ -121,6 +118,7 @@ function scheduleRoute(bikePath, routeObj, trip) {
         var icons = bikePath.get('icons');
         icons[0].offset = (percent*100 + '%');
         bikePath.set('icons', icons);
+        //Once path is done, remove the line
         if (percent >= 1) {
           bikePath.setMap(null);
           bikePath.set('icons', []);
